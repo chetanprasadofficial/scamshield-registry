@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>ScamShield Registry</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #171a21;
+    --accent: #4f8cff;
+    --danger: #ff5f5f;
+    --success: #4fd684;
+    --text: #e6e8ec;
+    --muted: #8b8f98;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 24px; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid #262a33;
+  }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.9; }
+  button.secondary { background: #2a2f3a; }
+  input, textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #2a2f3a;
+    background: #0f1115;
+    color: var(--text);
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+  label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .report {
+    border-bottom: 1px solid #262a33;
+    padding: 12px 0;
+  }
+  .report:last-child { border-bottom: none; }
+  .score { font-weight: bold; }
+  .score.positive { color: var(--success); }
+  .score.negative { color: var(--danger); }
+  .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  #status { font-size: 13px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🛡️ ScamShield Registry</h1>
+  <p class="subtitle">A decentralized, community-driven scam address registry.</p>
+
+  <div class="card">
+    <button id="connectBtn">Connect Wallet</button>
+    <div id="status">Not connected</div>
+  </div>
+
+  <div class="card">
+    <h3>File a Report</h3>
+    <label>Suspicious wallet address</label>
+    <input id="flaggedAddress" placeholder="0x..." />
+    <label>Reason</label>
+    <textarea id="reason" rows="2" placeholder="e.g. Fake airdrop, requested seed phrase"></textarea>
+    <label>Evidence link (optional)</label>
+    <input id="evidence" placeholder="https:// or ipfs://" />
+    <button id="fileReportBtn">Submit Report</button>
+  </div>
+
+  <div class="card">
+    <h3>Check an Address</h3>
+    <input id="checkAddress" placeholder="0x..." />
+    <button id="checkBtn" class="secondary">Check Trust Score</button>
+    <div id="reportsList"></div>
+  </div>
+</div>
+
+<script>
+  // ⚠️ Replace with your deployed contract address after deployment
+  const CONTRACT_ADDRESS = "0xYOUR_DEPLOYED_CONTRACT_ADDRESS";
+
+  const CONTRACT_ABI = [
+    "function fileReport(address _flaggedAddress, string _reason, string _evidenceURI) external",
+    "function vote(uint256 _reportId, bool _upvote) external",
+    "function getReportCount(address _addr) external view returns (uint256)",
+    "function getReportIds(address _addr) external view returns (uint256[])",
+    "function getTrustScore(address _addr) external view returns (int256)",
+    "function reports(uint256) external view returns (address reporter, address flaggedAddress, string reason, string evidenceURI, uint256 timestamp, int256 score)"
+  ];
+
+  let provider, signer, contract;
+
+  const statusEl = document.getElementById("status");
+
+  document.getElementById("connectBtn").onclick = async () => {
+    if (!window.ethereum) {
+      statusEl.textContent = "MetaMask not found. Please install it.";
+      return;
+    }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    const addr = await signer.getAddress();
+    statusEl.textContent = "Connected: " + addr;
+  };
+
+  document.getElementById("fileReportBtn").onclick = async () => {
+    if (!contract) return alert("Connect your wallet first.");
+    const flagged = document.getElementById("flaggedAddress").value.trim();
+    const reason = document.getElementById("reason").value.trim();
+    const evidence = document.getElementById("evidence").value.trim();
+    if (!ethers.isAddress(flagged)) return alert("Enter a valid address.");
+    if (!reason) return alert("Reason is required.");
+
+    try {
+      statusEl.textContent = "Submitting report...";
+      const tx = await contract.fileReport(flagged, reason, evidence);
+      await tx.wait();
+      statusEl.textContent = "Report submitted! Tx: " + tx.hash;
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "Error: " + (err.reason || err.message);
+    }
+  };
+
+  document.getElementById("checkBtn").onclick = async () => {
+    if (!contract) return alert("Connect your wallet first.");
+    const addr = document.getElementById("checkAddress").value.trim();
+    if (!ethers.isAddress(addr)) return alert("Enter a valid address.");
+
+    const listEl = document.getElementById("reportsList");
+    listEl.innerHTML = "Loading...";
+
+    try {
+      const trustScore = await contract.getTrustScore(addr);
+      const ids = await contract.getReportIds(addr);
+
+      let html = `<p><strong>Trust score:</strong> <span class="score ${trustScore < 0 ? 'negative' : 'positive'}">${trustScore.toString()}</span> (${ids.length} report${ids.length === 1 ? '' : 's'})</p>`;
+
+      for (const id of ids) {
+        const r = await contract.reports(id);
+        html += `
+          <div class="report">
+            <div>${r.reason}</div>
+            ${r.evidenceURI ? `<div class="meta">Evidence: ${r.evidenceURI}</div>` : ""}
+            <div class="meta">Reported by ${r.reporter} · Score: ${r.score}</div>
+          </div>`;
+      }
+      listEl.innerHTML = html || "<p>No reports found for this address.</p>";
+    } catch (err) {
+      console.error(err);
+      listEl.innerHTML = "Error loading reports.";
+    }
+  };
+</script>
+</body>
+</html>
