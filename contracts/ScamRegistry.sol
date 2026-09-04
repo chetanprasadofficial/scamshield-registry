@@ -6,7 +6,6 @@ pragma solidity ^0.8.20;
 ///         wallet addresses. Anyone can submit a report against an address,
 ///         and anyone can vote (upvote/downvote) on existing reports to build
 ///         a crowd-sourced trust score for that address.
-/// @dev Built for ONE HACK 8-hour hackathon. Kept intentionally simple and
 ///      gas-light so it is easy to reason about, test, and demo.
 contract ScamRegistry {
     struct Report {
