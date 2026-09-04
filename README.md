@@ -1,6 +1,6 @@
 # 🛡️ ScamShield Registry
 
-A decentralized, community-driven registry for flagging and tracking suspicious wallet addresses — built by Chetan Prasad and Kalyani Kriti as a hands-on exploration of Web3 fraud-prevention tooling.
+A decentralized, community-driven registry for flagging and tracking suspicious wallet addresses — built by Kalyani Kriti and Chetan Prasad as a hands-on exploration of Web3 fraud-prevention tooling.
 
 ## The Problem
 
