@@ -50,7 +50,7 @@ scamshield-registry/
 
 ## Team
 
-Built by Team [YOUR TEAM NAME] for ONE HACK 2026.
+Built by Kalyani Kriti and Chetan Prasad.
 
 ## License
 
