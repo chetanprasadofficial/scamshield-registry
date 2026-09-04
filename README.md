@@ -1,6 +1,6 @@
 # 🛡️ ScamShield Registry
 
-A decentralized, community-driven registry for flagging and tracking suspicious wallet addresses — built as a submission for **ONE HACK: 8-Hour AI × Web3 Hackathon** by Hackers Cult.
+A decentralized, community-driven registry for flagging and tracking suspicious wallet addresses — built by Chetan Prasad and Kalyani Kriti as a hands-on exploration of Web3 fraud-prevention tooling.
 
 ## The Problem
 
